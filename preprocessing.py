@@ -24,12 +24,11 @@ PROBE = "probe"
 TYPE = "type"
 HASH = "hash"
 ID = "person_id"
-ENABLED = "enabled"
+DISABLED = "disabled"
 TIME_WINDOW_MICRO_SECONDS = 500000 # which is 0.5 seconds
 
 DEBUG_PRINT = False
 USE_HASH = False
-REMOVE_UNNEEDED_FIELDS_FROM_LOG_AFTER_CLUSTERING = False
 ########### END GLOBALS ###########
 
 ########### AUXILIARY FUNCTIONS ###########
@@ -83,10 +82,10 @@ def merge_logs(logs_dict: dict, redundancy_map: dict = {}) -> list[dict]:
     new_data = []
     tmp_logs_dict = {}
     for key, log in logs_dict.items():
-        #print(key)
+        print(key)
         index = key[len("unit"):]
-        #print(key)
-        #print(index)
+        print(key)
+        print(index)
         tmp_logs_dict[index] = {}
         tmp_logs_dict[index][DATA] = log
         tmp_logs_dict[index][EOF] = False
@@ -192,7 +191,7 @@ def compile_clustered_log(packet_log: list[dict], threshold: int) -> list[dict]:
             if USE_HASH:
                 hash_key = packet[HASH] # not implemented, right now all hashes = "0"
             else:
-                hash_key = "NOHASH"
+                hash_key = "FUCKYOU"
             if hash_key not in disconnected_devices_hash_dict:
                 disconnected_devices_hash_dict[hash_key] = [[], [], []] # a 3xN array
             disconnected_devices_hash_dict[hash_key][0].append([timestamp_float, sequence_number]) # 2d space for clustering
@@ -234,11 +233,10 @@ def compile_clustered_log(packet_log: list[dict], threshold: int) -> list[dict]:
         log_result.append(packet)
     
     # remove not needed fields
-    if REMOVE_UNNEEDED_FIELDS_FROM_LOG_AFTER_CLUSTERING:
-        for packet_dict in log_result:
-            for key in list(packet_dict.keys()):
-                if key not in [TIME, METERS, DBM, UNIT_ID, ID]:
-                    packet_dict.pop(key)
+    for packet_dict in log_result:
+        for key in list(packet_dict.keys()):
+            if key not in [TIME, METERS, DBM, UNIT_ID, ID]:
+                packet_dict.pop(key)
     return sorted(log_result, key=lambda x: x[ID])
     
 ########### END USECASE FUNCTIONS ###########

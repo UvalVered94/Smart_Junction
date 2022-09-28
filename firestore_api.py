@@ -12,7 +12,6 @@ CONFIG = "config"
 THRESHOLDS = "thresholds"
 DATA = "data"
 WINDOW_SIZE = "timeframe_minutes"
-DOCUMENT_SIZE_THRESHOLD = 990000 # 990KB which is just under 1MB - firestore document size limit
 is_app_initialized = False
 ### GLOBALS ###
 
@@ -167,25 +166,17 @@ def upload_log_to_server(account_token: dict, data: list[str], window_start_stam
     if len(data) == 0:
         return False
     start = timeit.default_timer()
-    start_time = window_start_stamp.strftime("%H:%M")
-    end_time = window_end_stamp.strftime("%H:%M")
     db = init_firebase(account_token)
     data_to_upload = []
-    size = 0
-    counter = 0
-    for index, packet in enumerate(data):
-        size += len(packet)
+    for packet in data:
         data_to_upload.append(json.loads(packet))
-        if (size > DOCUMENT_SIZE_THRESHOLD) or ((index + 1) == len(data)): # threshold passed or last item
-            data_dict = {"data" : data_to_upload}
-            packets_date = datetime.fromisoformat(data_to_upload[0]["time"]).date().isoformat()
-            unit_id = data_to_upload[0]["unit_id"]
-            document_name = "unit" + str(unit_id) + "_" + str(counter)
-            db.collection(DATA).document(packets_date).set({"what is the answer?" : "42"})
-            db.collection(DATA).document(packets_date).collection(start_time + "_" + end_time).document(document_name).set(data_dict)
-            data_to_upload = []
-            size = 0
-            counter += 1
+    data_dict = {"data" : data_to_upload}
+    start_time = window_start_stamp.strftime("%H:%M")
+    end_time = window_end_stamp.strftime("%H:%M")
+    packets_date = datetime.fromisoformat(data_to_upload[0]["time"]).date().isoformat()
+    unit_id = data_to_upload[0]["unit_id"]
+    db.collection(DATA).document(packets_date).set({"what is the answer?" : "42"})
+    db.collection(DATA).document(packets_date).collection(start_time + "_" + end_time).document("unit" + str(unit_id)).set(data_dict)
     stop = timeit.default_timer()
     print('**************************\n****SUCCESS UPLOAD*****\n**************************')
     print("Time taken " + str(stop - start))
@@ -201,26 +192,11 @@ def end_unit_handshake(account_token: dict, unit_id: str, time_stamp: datetime, 
     return upload_config_to_server(account_token,temp_dict, True)
 
 
-def delete_data_from_date_timestamp(account_token: dict, date: str, timestamp: str):
+def delete_data(account_token: dict, date: str, start_time: str, end_time: str) -> bool:
     """
-    deletes a timestamp collection and it's sub collections.
     """
-    db = init_firebase(account_token)
-    timestamp_collection = db.collection(DATA).document(date).collection(timestamp).get()
-    units_in_timestamp = get_ids_from_document(timestamp_collection)
-    for unit in units_in_timestamp:
-        db.collection(DATA).document(date).collection(timestamp).document(unit).delete()
-    
-def delete_data_from_date(account_token: dict, date: str):
-    """
-    deletes all sub collections from a date document, and delete the date document after
-    """
-    db = init_firebase(account_token)
-    times_collections = db.collection(DATA).document(date).collections()
-    times_list = get_ids_from_document(times_collections)
-    for timestamp in times_list:
-        delete_data_from_date_timestamp(account_token, date, timestamp)
-    db.collection(DATA).document(date).delete()
+    print("not implemented")
+    return False   
 
 
 if __name__ == "__main__":
